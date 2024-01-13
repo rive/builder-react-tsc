@@ -1,6 +1,6 @@
 import glob from 'fast-glob';
 import ignore from 'fast-ignore';
-import { readFile, rm } from 'fs/promises';
+import { copyFile, readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { replaceTscAliasPaths } from 'tsc-alias';
 import ts from 'typescript';
@@ -24,7 +24,7 @@ export default function react(options?: Options) {
       }
 
       // find source files
-      let fileNames = await glob('src/**/*.{js,jsx,ts,tsx}');
+      let sources = await glob('src/**/*.{js,jsx,ts,tsx}');
       const ig = ignore([
         '*.spec.js',
         '*.spec.jsx',
@@ -32,7 +32,10 @@ export default function react(options?: Options) {
         '*.spec.tsx',
         ...(tsconfig.exclude || []),
       ]);
-      fileNames = fileNames.filter((file) => !ig(file));
+      sources = sources.filter((file) => !ig(file));
+
+      // find assets files
+      const assets = await glob('src/**/*.{css,less,scss}');
 
       // compile esm and d.ts
       await (async () => {
@@ -44,7 +47,7 @@ export default function react(options?: Options) {
           module: ts.ModuleKind.ESNext,
           outDir,
         };
-        const program = ts.createProgram(fileNames, compilerOptions);
+        const program = ts.createProgram(sources, compilerOptions);
         program.emit();
         // convert tsconfig.json paths (alias) to relative (real) path
         await replaceTscAliasPaths({
@@ -53,7 +56,12 @@ export default function react(options?: Options) {
           outDir,
         });
 
-        // TODO copy styles, images, etc.
+        // copy styles, images, etc.
+        await Promise.all(
+          assets.map((asset) =>
+            copyFile(join(process.cwd(), asset), join(outDir, asset.substring(3)))
+          )
+        );
       })();
 
       // compile cjs
@@ -66,10 +74,15 @@ export default function react(options?: Options) {
           module: ts.ModuleKind.CommonJS,
           outDir: join(outDir, 'cjs'),
         };
-        const program = ts.createProgram(fileNames, compilerOptions);
+        const program = ts.createProgram(sources, compilerOptions);
         program.emit();
 
-        // TODO copy styles, images, etc.
+        // copy styles, images, etc.
+        await Promise.all(
+          assets.map((asset) =>
+            copyFile(join(process.cwd(), asset), join(outDir, 'cjs', asset.substring(3)))
+          )
+        );
       })();
     },
   };
