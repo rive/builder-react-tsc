@@ -1,0 +1,56 @@
+{
+  "name": "@rive/builder-react-tsc",
+  "version": "1.0.0",
+  "description": "React library builder powered by TypeScript compiler",
+  "keywords": [
+    "node"
+  ],
+  "homepage": "https://github.com/rive/builder-react-tsc#readme",
+  "bugs": {
+    "url": "https://github.com/rive/builder-react-tsc/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rive/builder-react-tsc.git"
+  },
+  "funding": "https://github.com/sponsors/guoyunhe",
+  "license": "MIT",
+  "author": {
+    "name": "Guo Yunhe",
+    "email": "i@guoyunhe.me"
+  },
+  "type": "module",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
+  "files": [
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "node-scripts build",
+    "format": "node-scripts format",
+    "lint": "node-scripts lint",
+    "test": "node-scripts test",
+    "watch": "node-scripts watch"
+  },
+  "prettier": {
+    "printWidth": 100,
+    "singleQuote": true
+  },
+  "eslintConfig": {
+    "extends": "@guoyunhe/node-scripts"
+  },
+  "jest": {
+    "preset": "@guoyunhe/node-scripts"
+  },
+  "devDependencies": {
+    "@guoyunhe/node-scripts": "^2.2.0",
+    "@tsconfig/node20": "^1.0.2",
+    "@tsconfig/strictest": "^2.0.2",
+    "@types/jest": "^29.5.11",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.3"
+  }
+}
