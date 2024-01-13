@@ -34,7 +34,7 @@
     "lint": "node-scripts lint",
     "test": "node-scripts test",
     "watch": "node-scripts watch",
-    "example:build": "tsx src/index.ts"
+    "example:build": "cd example && tsx ../src/index.ts"
   },
   "prettier": {
     "printWidth": 100,

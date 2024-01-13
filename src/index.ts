@@ -1,50 +1,78 @@
 import glob from 'fast-glob';
 import ignore from 'fast-ignore';
-import { readFile } from 'fs/promises';
+import { readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { replaceTscAliasPaths } from 'tsc-alias';
-import { CompilerOptions, convertCompilerOptionsFromJson, createProgram } from 'typescript';
+import ts from 'typescript';
 
 export interface Options {}
 
-export default function (options: Options) {
+export default function react(options?: Options) {
   return {
     build: async () => {
-      const outDir = join(process.cwd(), 'd.ts');
+      const outDir = join(process.cwd(), 'dist');
       const tsconfigFilePath = join(process.cwd(), 'tsconfig.json');
 
-      // Read tsconfig.json
-      let tsconfig = {};
+      await rm(outDir, { recursive: true, force: true });
+
+      // read tsconfig.json
+      let tsconfig: any = {};
       try {
         tsconfig = await readFile(tsconfigFilePath, 'utf-8');
       } catch (e) {
         //
       }
 
-      // Convert
-      const compilerOptionsResult = convertCompilerOptionsFromJson(tsconfig, process.cwd());
-      const compilerOptions: CompilerOptions = {
-        ...compilerOptionsResult.options,
-        declaration: true,
-        noEmit: false,
-        outDir,
-        rootDir: process.cwd(),
-      };
+      // find source files
+      let fileNames = await glob('src/**/*.{js,jsx,ts,tsx}');
+      const ig = ignore([
+        '*.spec.js',
+        '*.spec.jsx',
+        '*.spec.ts',
+        '*.spec.tsx',
+        ...(tsconfig.exclude || []),
+      ]);
+      fileNames = fileNames.filter((file) => !ig(file));
 
-      const fileNames = (await glob('src/**/*.{js,jsx,ts,tsx}')).filter(
-        ignore(['*.spec.js', '*.spec.jsx', '*.spec.ts', '*.spec.tsx'])
-      );
+      // compile esm and d.ts
+      await (async () => {
+        const compilerOptionsResult = ts.convertCompilerOptionsFromJson(tsconfig, process.cwd());
+        const compilerOptions: ts.CompilerOptions = {
+          ...compilerOptionsResult.options,
+          declaration: true,
+          noEmit: false,
+          module: ts.ModuleKind.ESNext,
+          outDir,
+        };
+        const program = ts.createProgram(fileNames, compilerOptions);
+        program.emit();
+        // convert tsconfig.json paths (alias) to relative (real) path
+        await replaceTscAliasPaths({
+          configFile: tsconfigFilePath,
+          declarationDir: outDir,
+          outDir,
+        });
 
-      // Prepare and emit the d.ts files
-      const program = createProgram(fileNames, compilerOptions);
-      program.emit();
+        // TODO copy styles, images, etc.
+      })();
 
-      // Convert tsconfig.json paths (alias) to relative (real) path
-      await replaceTscAliasPaths({
-        configFile: tsconfigFilePath,
-        declarationDir: rawDir,
-        outDir: rawDir,
-      });
+      // compile cjs
+      await (async () => {
+        const compilerOptionsResult = ts.convertCompilerOptionsFromJson(tsconfig, process.cwd());
+        const compilerOptions: ts.CompilerOptions = {
+          ...compilerOptionsResult.options,
+          declaration: false,
+          noEmit: false,
+          module: ts.ModuleKind.CommonJS,
+          outDir: join(outDir, 'cjs'),
+        };
+        const program = ts.createProgram(fileNames, compilerOptions);
+        program.emit();
+
+        // TODO copy styles, images, etc.
+      })();
     },
   };
 }
+
+react().build();
