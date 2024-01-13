@@ -33,7 +33,8 @@
     "format": "node-scripts format",
     "lint": "node-scripts lint",
     "test": "node-scripts test",
-    "watch": "node-scripts watch"
+    "watch": "node-scripts watch",
+    "example:build": "tsx src/index.ts"
   },
   "prettier": {
     "printWidth": 100,
@@ -51,6 +52,16 @@
     "@tsconfig/strictest": "^2.0.2",
     "@types/jest": "^29.5.11",
     "@types/node": "^20.11.0",
+    "@types/react": "^18.2.47",
+    "react": "^18.2.0",
+    "tsx": "^4.7.0"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.2",
+    "fast-ignore": "^1.1.1",
+    "less": "^4.2.0",
+    "sass": "^1.69.7",
+    "tsc-alias": "^1.8.8",
     "typescript": "^5.3.3"
   }
 }
