@@ -34,7 +34,8 @@
     "lint": "node-scripts lint",
     "test": "node-scripts test",
     "watch": "node-scripts watch",
-    "example:build": "cd example && tsx ../src/index.ts"
+    "example:build": "cd example && tsx ../src/index.ts",
+    "example:build:tsc": "cd example && npm run build"
   },
   "prettier": {
     "printWidth": 100,
@@ -62,6 +63,6 @@
     "less": "^4.2.0",
     "sass": "^1.69.7",
     "tsc-alias": "^1.8.8",
-    "typescript": "^5.3.3"
+    "typescript": "^4.0.0"
   }
 }
