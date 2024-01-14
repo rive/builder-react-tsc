@@ -1,3 +1,4 @@
+import chalk from 'chalk';
 import glob from 'fast-glob';
 import ignore from 'fast-ignore';
 import { copyFile, readFile, rm } from 'fs/promises';
@@ -18,9 +19,31 @@ export default function react(options?: Options) {
       // read tsconfig.json
       let tsconfig: any = {};
       try {
-        tsconfig = await readFile(tsconfigFilePath, 'utf-8');
+        tsconfig = JSON.parse(await readFile(tsconfigFilePath, 'utf-8'));
       } catch (e) {
-        //
+        console.log(chalk.red('[rive]'), 'Failed to parse tsconfig.json:');
+        console.log();
+        throw e;
+      }
+
+      // convert string literal like 'esnext' to enum like ts.ModuleKind.ESNext (=99)
+      const compilerOptionsResult = ts.convertCompilerOptionsFromJson(
+        tsconfig.compilerOptions,
+        process.cwd(),
+        'tsconfig.json'
+      );
+      // quit building if compilerOptions is invalid
+      if (compilerOptionsResult.errors.length > 0) {
+        console.log(chalk.red('[rive]'), 'Failed to parse compilerOptions from tsconfig.json:');
+        // margin bottom
+        console.log();
+        compilerOptionsResult.errors.forEach((error) => {
+          console.log(error.code, error.messageText);
+        });
+        // margin bottom
+        console.log();
+
+        process.exit(1);
       }
 
       // find source files
@@ -39,17 +62,31 @@ export default function react(options?: Options) {
 
       // compile esm and d.ts
       await (async () => {
-        const compilerOptionsResult = ts.convertCompilerOptionsFromJson(tsconfig, process.cwd());
         const compilerOptions: ts.CompilerOptions = {
           ...compilerOptionsResult.options,
           declaration: true,
           noEmit: false,
           module: ts.ModuleKind.ESNext,
+          moduleResolution: ts.ModuleResolutionKind.Node10,
           outDir,
         };
         const program = ts.createProgram(sources, compilerOptions);
-        program.emit();
-        // convert tsconfig.json paths (alias) to relative (real) path
+        const emitResult = program.emit();
+
+        const allDiagnostics = ts.getPreEmitDiagnostics(program).concat(emitResult.diagnostics);
+
+        allDiagnostics.forEach((diagnostic) => {
+          if (diagnostic.file) {
+            const { line, character } = ts.getLineAndCharacterOfPosition(
+              diagnostic.file,
+              diagnostic.start!
+            );
+            const message = ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n');
+            console.log(`${diagnostic.file.fileName} (${line + 1},${character + 1}): ${message}`);
+          } else {
+            console.log(ts.flattenDiagnosticMessageText(diagnostic.messageText, '\n'));
+          }
+        }); // convert tsconfig.json paths (alias) to relative (real) path
         await replaceTscAliasPaths({
           configFile: tsconfigFilePath,
           declarationDir: outDir,
@@ -66,7 +103,6 @@ export default function react(options?: Options) {
 
       // compile cjs
       await (async () => {
-        const compilerOptionsResult = ts.convertCompilerOptionsFromJson(tsconfig, process.cwd());
         const compilerOptions: ts.CompilerOptions = {
           ...compilerOptionsResult.options,
           declaration: false,
