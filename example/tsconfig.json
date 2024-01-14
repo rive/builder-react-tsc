@@ -1,7 +1,9 @@
 {
   "compilerOptions": {
     "jsx": "react-jsx",
-    "target": "es2015",
-    "moduleResolution": "node"
+    "target": "es5",
+    "moduleResolution": "node",
+    "lib": ["dom", "esnext"],
+    "outDir": "dist"
   }
 }
